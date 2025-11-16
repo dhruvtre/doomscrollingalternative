@@ -183,30 +183,60 @@
             circle(x, y, 5);
         }
 
+        // Track touch for mobile support
+        let touchStartY = 0;
+        let lastTouchY = 0;
+
         function mouseWheel(event) {
             // Only respond to scroll when mouse is over canvas
             if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
                 if (event.delta > 0) {
-                    if (movingRight) {
-                        xPos += sin(startoffset);
-                    } else {
-                        xPos -= cos(-startoffset);
-                    }
-                    
-                    yOffset += 3;
-                    
-                    // Scale boundaries based on actual canvas size
-                    let maxX = width / 2;
-                    let maxY = height / 2;
-                    
-                    if (xPos >= maxX || xPos <= -maxX) {
-                        movingRight = !movingRight;
-                    }
-                    
-                    if (yOffset > maxY) yOffset = -maxY;
+                    addPoint();
                 }
                 return false; // Prevent default scroll only when over canvas
             }
+        }
+
+        function touchStarted() {
+            if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
+                touchStartY = touches[0].y;
+                lastTouchY = touchStartY;
+                return false;
+            }
+        }
+
+        function touchMoved() {
+            if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
+                let currentY = touches[0].y;
+                let deltaY = lastTouchY - currentY;
+                
+                // If dragging upward (negative delta), add points
+                if (deltaY > 5) { // Threshold to prevent tiny movements
+                    addPoint();
+                    lastTouchY = currentY;
+                }
+                return false;
+            }
+        }
+
+        function addPoint() {
+            if (movingRight) {
+                xPos += sin(startoffset);
+            } else {
+                xPos -= cos(-startoffset);
+            }
+            
+            yOffset += 3;
+            
+            // Scale boundaries based on actual canvas size
+            let maxX = width / 2;
+            let maxY = height / 2;
+            
+            if (xPos >= maxX || xPos <= -maxX) {
+                movingRight = !movingRight;
+            }
+            
+            if (yOffset > maxY) yOffset = -maxY;
         }
 
         function windowResized() {
