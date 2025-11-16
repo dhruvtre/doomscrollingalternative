@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>An Alternative to Doom Scrolling</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            gap: 60px;
+            align-items: flex-start;
+        }
+        
+        .content-section {
+            flex: 1;
+            max-width: 500px;
+            padding-left: clamp(20px, 5vw, 60px);
+        }
+        
+        .canvas-section {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .intro {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 40px;
+            color: #aaa;
+        }
+        
+        #sketch-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 40px 0;
+        }
+        
+        canvas {
+            border: 1px solid #333;
+            margin-top: 20px;
+        }
+        
+        input, button {
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+        
+        button {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #333;
+        }
+        
+        .controls {
+            margin: 10px 0;
+            color: #aaa;
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        /* Stack vertically on smaller screens */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                gap: 30px;
+            }
+            
+            .content-section {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content-section">
+            <h1>An Alternative to Doom Scrolling</h1>
+            <div class="intro">
+                <p>We spend hours scrolling through infinite feeds of content—consuming, never creating. This is an experiment in redirecting that gesture.</p>
+                <p>Instead of mindlessly scrolling through content, scroll here to create patterns. Each upward scroll becomes a stroke in a generative artwork. The familiar motion of infinite consumption becomes an act of creation.</p>
+                <p><strong>Try it:</strong> Scroll up repeatedly and watch the pattern emerge.</p>
+            </div>
+            <div id="controls-container"></div>
+        </div>
+        
+        <div class="canvas-section">
+            <div id="sketch-container"></div>
+        </div>
+    </div>
+
+    <script>
+        let xPos = 0;
+        let yOffset = -200; // Will be set properly in setup()
+        let startoffset = 65;
+        let movingRight = true;
+        let resetButton;
+        let start_offset_input;
+
+        function setup() {
+            // Create offset control in the left content section
+            createDiv('Set offset from 0-100').parent('controls-container').class('controls');
+            start_offset_input = createInput('65').parent('controls-container');
+            start_offset_input.size(100);
+            start_offset_input.style('margin-bottom', '10px');
+            
+            // Create reset button below input
+            resetButton = createButton('Reset').parent('controls-container');
+            resetButton.mousePressed(resetSketch);
+            resetButton.style('margin-left', '10px');
+            
+            
+            // Calculate responsive canvas size with phone-like aspect ratio
+            let margin = 40; // 20px on each side
+            let maxWidth = 400; // Increased max width
+            let canvasWidth = min(windowWidth - margin, maxWidth);
+            let canvasHeight = canvasWidth * 1.4; // Phone-like ratio (taller)
+            
+            let canvas = createCanvas(canvasWidth, canvasHeight);
+            canvas.parent('sketch-container');
+            background(0);
+            
+            // Set initial yOffset based on canvas height
+            yOffset = -canvasHeight / 2;
+        }
+
+        function draw() {
+            translate(width/2, height/2);
+            
+            // Scale mapping and positioning based on canvas size
+            let maxX = width / 2;
+            let mouseInfluence = map(xPos, -maxX, maxX, 1, 10);
+            
+            // Scale circle positioning based on canvas size
+            let radius1 = width * 0.33; // Equivalent to 200 for 600px canvas
+            let radius2 = width * 0.083; // Equivalent to 50 for 600px canvas
+            let x = cos(-mouseInfluence) * radius1 + cos(-mouseInfluence) * radius2;
+            let y = yOffset;
+            
+            fill(255, 100);
+            noStroke();
+            circle(x, y, 5);
+        }
+
+        function mouseWheel(event) {
+            // Only respond to scroll when mouse is over canvas
+            if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
+                if (event.delta > 0) {
+                    if (movingRight) {
+                        xPos += sin(startoffset);
+                    } else {
+                        xPos -= cos(-startoffset);
+                    }
+                    
+                    yOffset += 3;
+                    
+                    // Scale boundaries based on actual canvas size
+                    let maxX = width / 2;
+                    let maxY = height / 2;
+                    
+                    if (xPos >= maxX || xPos <= -maxX) {
+                        movingRight = !movingRight;
+                    }
+                    
+                    if (yOffset > maxY) yOffset = -maxY;
+                }
+                return false; // Prevent default scroll only when over canvas
+            }
+        }
+
+        function windowResized() {
+            // Recalculate canvas size when window is resized
+            let margin = 40;
+            let maxWidth = 500;
+            let newWidth = min(windowWidth - margin, maxWidth);
+            let newHeight = newWidth * 1.4; // Phone-like ratio
+            resizeCanvas(newWidth, newHeight);
+            background(0); // Clear canvas after resize
+        }
+
+        function resetSketch() {
+            // Get offset value from input
+            startoffset = int(start_offset_input.value());
+            
+            // Reset variables with default starting Y position
+            let maxY = height / 2;
+            yOffset = -maxY; // Start at top of canvas
+            xPos = 0;
+            movingRight = true;
+            
+            // Clear canvas
+            background(0);
+        }
+    </script>
+</body>
+</html>
